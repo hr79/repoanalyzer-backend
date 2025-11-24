@@ -51,7 +51,7 @@ jobs:
       run: ./gradlew test --info
 
     - name: Build Backend Jar
-      working-directory: ./postIt-backend
+      working-directory: ./
       run: ./gradlew clean build -x test
 
     - name: Docker Login (Naver Cloud Registry)
