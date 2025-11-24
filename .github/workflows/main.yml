@@ -1,0 +1,97 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '.github/**'
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '.github/**'
+      
+jobs:
+  ci-cd:
+    runs-on: ubuntu-latest
+
+    env:
+      REGISTRY: ${{ secrets.DOCKER_REGISTRY_URL }}
+      REGISTRY_USER: ${{ secrets.PROD_DOCKER_USERNAME }}
+      REGISTRY_PASS: ${{ secrets.PROD_DOCKER_PASSWORD }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Cache Gradle
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: gradle-
+
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Run Tests
+      working-directory: ./
+      # env:
+        # JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+      run: ./gradlew test --info
+
+    - name: Build Backend Jar
+      working-directory: ./postIt-backend
+      run: ./gradlew clean build -x test
+
+    - name: Docker Login (Naver Cloud Registry)
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ secrets.DOCKER_REGISTRY_URL }}
+        username: ${{ secrets.PROD_DOCKER_USERNAME }}
+        password: ${{ secrets.PROD_DOCKER_PASSWORD }}
+
+    - name: Build and Push Backend Image
+      env:
+        IMAGE: ${{ secrets.DOCKER_REGISTRY_URL }}/project-ai-analyzer:latest
+      run: |
+        docker build -t $IMAGE ./
+        docker push $IMAGE
+
+    # ---------------------- 배포 ----------------------
+    - name: Deploy to Naver Cloud
+      uses: appleboy/ssh-action@v0.1.8
+      with:
+        host: ${{ secrets.NCLOUD_SERVER_IP }}
+        username: ${{ secrets.NCLOUD_SERVER_USER }}
+        key: ${{ secrets.NCLOUD_PRIVATE_KEY }}
+        script: |
+          export REGISTRY="${{ secrets.DOCKER_REGISTRY_URL }}"
+          
+          cd /home/${{ secrets.NCLOUD_SERVER_USER }}
+          
+          sudo docker compose -f docker-compose.prod.yml down
+
+          sudo docker pull $REGISTRY/project-ai-analyzer:latest
+
+          sudo docker compose -f docker-compose.prod.yml up -d --force-recreate
+
+    # ---------------------- Smoke Test ----------------------
+    - name: Smoke test - Backend health
+      run: |
+        for i in {1..10}; do
+          curl -fsS https://praianalyzer.duckdns.org/api/actuator/health && exit 0
+          echo "Backend not ready... retrying"
+          sleep 5
+        done
+        exit 1
