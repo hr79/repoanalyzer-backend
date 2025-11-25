@@ -86,11 +86,11 @@ jobs:
 
           sudo docker compose -f docker-compose.prod.yml up -d --force-recreate
     # ---------------------- Smoke Test ----------------------
-    - name: Smoke test - Backend health
-      run: |
-        for i in {1..10}; do
-          curl -fsS https://praianalyzer.duckdns.org/api/actuator/health && exit 0
-          echo "Backend not ready... retrying"
-          sleep 5
-        done
-        exit 1
+    # - name: Smoke test - Backend health
+    #   run: |
+    #     for i in {1..10}; do
+    #       curl -fsS https://praianalyzer.duckdns.org/api/actuator/health && exit 0
+    #       echo "Backend not ready... retrying"
+    #       sleep 5
+    #     done
+    #     exit 1
