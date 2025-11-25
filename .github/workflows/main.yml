@@ -25,6 +25,7 @@ jobs:
       REGISTRY_USER: ${{ secrets.PROD_DOCKER_USERNAME }}
       REGISTRY_PASS: ${{ secrets.PROD_DOCKER_PASSWORD }}
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
     - name: Checkout
