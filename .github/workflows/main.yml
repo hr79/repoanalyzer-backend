@@ -1,93 +1,96 @@
-name: CI/CD Pipeline
-
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
     paths-ignore:
       - 'README.md'
       - 'docs/**'
       - '.github/**'
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
     paths-ignore:
       - 'README.md'
       - 'docs/**'
       - '.github/**'
-
+      
 jobs:
-  # =================== CI ===================
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     env:
-      REGISTRY: ${{ secrets.DOCKER_REGISTRY_URL }}
-      IMAGE_NAME: project-ai-analyzer
-      IMAGE_TAG: latest
+      # REGISTRY: ${{ secrets.DOCKER_REGISTRY_URL }}
+      REGISTRY_USER: ${{ secrets.PROD_DOCKER_USERNAME }}
+      REGISTRY_PASS: ${{ secrets.PROD_DOCKER_PASSWORD }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Cache Gradle
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: gradle-
+    - name: Cache Gradle
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: gradle-
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
 
-      - name: Run Tests
-        run: ./gradlew test --info
+    # ----------- CI: Test -----------
+    - name: Run Tests
+      # working-directory: ./
+      # env:
+        # groq.api-key: ${{ secrets.GROQ_API_KEY }}
+        # JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+      run: ./gradlew test --info
 
-      - name: Build Backend Jar
-        run: ./gradlew clean build -x test
+    - name: Build Backend Jar
+      # working-directory: ./
+      # env:
+      #   groq.api-key: ${{ secrets.GROQ_API_KEY }}
+      run: ./gradlew clean build -x test
 
-      # push main일 때만 Docker build/push 수행
-      - name: Build and Push Docker Image
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          IMAGE=$REGISTRY/$IMAGE_NAME:$IMAGE_TAG
-          docker login $REGISTRY -u "${{ secrets.PROD_DOCKER_USERNAME }}" -p "${{ secrets.PROD_DOCKER_PASSWORD }}"
-          docker build -t $IMAGE .
-          docker push $IMAGE
+    - name: Docker Login
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.PROD_DOCKER_USERNAME }}
+        password: ${{ secrets.PROD_DOCKER_PASSWORD }}
+    - name: Build and Push Backend Image
+      env:
+        IMAGE: ${{ secrets.PROD_DOCKER_USERNAME }}/project-ai-analyzer:latest
+      run: |
+        docker build -t $IMAGE ./
+        docker push $IMAGE
+    # ---------------------- 배포 ----------------------
+    - name: Deploy to NCloud Servcer
+      uses: appleboy/ssh-action@v0.1.8
+      with:
+        host: ${{ secrets.NCLOUD_SERVER_IP }}
+        username: ${{ secrets.NCLOUD_SERVER_USER }}
+        key: ${{ secrets.NCLOUD_PRIVATE_KEY }}
+        script: |
 
+          cd /home/${{ secrets.NCLOUD_SERVER_USER }}
+          
+          sudo docker compose -f docker-compose.prod.yml down
 
-  # =================== CD ===================
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+          sudo docker pull ${{ secrets.PROD_DOCKER_USERNAME }}/project-ai-analyzer:latest
 
-    env:
-      REGISTRY: ${{ secrets.DOCKER_REGISTRY_URL }}
-      IMAGE_NAME: project-ai-analyzer
-      IMAGE_TAG: latest
-
-    steps:
-      - name: Deploy to Naver Cloud
-        uses: appleboy/ssh-action@v0.1.8
-        with:
-          host: ${{ secrets.NCLOUD_SERVER_IP }}
-          username: ${{ secrets.NCLOUD_SERVER_USER }}
-          key: ${{ secrets.NCLOUD_PRIVATE_KEY }}
-          script: |
-            cd /home/${{ secrets.NCLOUD_SERVER_USER }}
-            sudo docker compose -f docker-compose.prod.yml down
-            sudo docker pull $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
-            sudo docker compose -f docker-compose.prod.yml up -d --force-recreate
-
-      - name: Smoke Test - Backend Health
-        run: |
-          for i in {1..10}; do
-            curl -fsS https://praianalyzer.duckdns.org/api/actuator/health && exit 0
-            echo "Backend not ready... retrying"
-            sleep 5
-          done
-          exit 1
+          sudo docker compose -f docker-compose.prod.yml up -d --force-recreate
+    # ---------------------- Smoke Test ----------------------
+    - name: Smoke test - Backend health
+      run: |
+        for i in {1..10}; do
+          curl -fsS https://praianalyzer.duckdns.org/api/actuator/health && exit 0
+          echo "Backend not ready... retrying"
+          sleep 5
+        done
+        exit 1
