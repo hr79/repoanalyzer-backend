@@ -1,20 +1,19 @@
-spring.profiles.active: ${SPRING_PROFILES_ACTIVE:prod}
-
-openai:
-  api:
-    key: ${OPENAI_API_KEY}
-
-groq:
-  api-key: ${GROQ_API_KEY}
-
-management:
-  endpoints:
-    web:
-      base-path: /api/actuator
-      exposure:
-        include:
-          - health
-          - info
-    endpoint:
-      health:
-        show-details: always
+#
+#openai:
+#  api:
+#    key: ${OPENAI_API_KEY}
+#
+#groq:
+#  api-key: ${GROQ_API_KEY}
+#
+#management:
+#  endpoints:
+#    web:
+#      base-path: /api/actuator
+#      exposure:
+#        include:
+#          - health
+#          - info
+#    endpoint:
+#      health:
+#        show-details: always
