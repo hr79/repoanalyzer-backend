@@ -3,6 +3,7 @@ package com.example.projectaianalyzer.domain.analysis.service;
 import com.example.projectaianalyzer.domain.analysis.dto.FileStructureAnalysisDto;
 import com.example.projectaianalyzer.domain.analysis.dto.FinalAnalysisDto;
 import com.example.projectaianalyzer.domain.project.model.FileInfo;
+import com.example.projectaianalyzer.infra.util.FileStorage;
 import com.example.projectaianalyzer.infra.util.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.DisplayName;
@@ -26,8 +27,16 @@ class AnalysisManagerImplTest {
     @Mock
     private JsonParser jsonParser;
 
+    @Mock
+    private FileStorage fileStorage;
+
     @InjectMocks
     private AnalysisManagerImpl manager;
+
+//    @BeforeEach
+//    void setUp() {
+//        manager = new AnalysisManagerImpl(domainAnalysisService, jsonParser, fileStorage);
+//    }
 
     @Test
     @DisplayName("Given valid structures When analyze Then return FinalAnalysisDto")
@@ -50,6 +59,7 @@ class AnalysisManagerImplTest {
                 .thenReturn("{priority}");
         when(domainAnalysisService.analyzeEntireProjectByAllDomains(anyList()))
                 .thenReturn("{final}");
+        doNothing().when(fileStorage).writeJson(any(), anyString()); // writeJson 메서드는 void이므로 별도의 반환값 설정 불필요. 아무것도 안하게 처리.
         FinalAnalysisDto expectedDto = new FinalAnalysisDto();
         expectedDto.setProjectOverview("done");
         when(jsonParser.parseJson(eq("{final}"), any(TypeReference.class)))
