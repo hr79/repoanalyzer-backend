@@ -3,7 +3,6 @@ package com.example.projectaianalyzer.domain.analysis.service;
 import com.example.projectaianalyzer.common.PromptRegistry;
 import com.example.projectaianalyzer.domain.ai.model.GroqAiModel;
 import com.example.projectaianalyzer.domain.ai.service.GroqClient;
-import com.example.projectaianalyzer.domain.analysis.service.AnalyzeServiceInterface.FileStructureAnalyzeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

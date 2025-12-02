@@ -2,9 +2,8 @@ package com.example.projectaianalyzer.domain.analysis.service;
 
 import com.example.projectaianalyzer.domain.analysis.dto.FileStructureAnalysisDto;
 import com.example.projectaianalyzer.domain.analysis.dto.FinalAnalysisDto;
-import com.example.projectaianalyzer.domain.analysis.service.AnalyzeServiceInterface.AnalysisManager;
 import com.example.projectaianalyzer.domain.project.model.FileInfo;
-import com.example.projectaianalyzer.infra.util.FileInfoJsonWriter;
+import com.example.projectaianalyzer.infra.util.FileStorage;
 import com.example.projectaianalyzer.infra.util.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +19,7 @@ public class AnalysisManagerImpl implements AnalysisManager {
 
     private final DomainAnalysisService domainAnalysisService;
     private final JsonParser jsonParser;
+    private final FileStorage fileStorage;
 
     @Override
     public FinalAnalysisDto analyzeByFileStructureResult(
@@ -88,7 +88,7 @@ public class AnalysisManagerImpl implements AnalysisManager {
 
         FinalAnalysisDto finalAnalysisDto = jsonParser.parseJson(finalResult, new TypeReference<FinalAnalysisDto>() {
         });
-        FileInfoJsonWriter.writeToJsonFile(finalAnalysisDto, projectPath + "/analysis_report_final.json");
+        fileStorage.writeJson(finalAnalysisDto, projectPath + "/analysis_report_final.json");
 
         return finalAnalysisDto;
     }

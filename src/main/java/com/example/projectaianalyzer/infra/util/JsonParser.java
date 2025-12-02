@@ -10,18 +10,18 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class JsonParser {
+    private final ObjectMapper objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+
     public <T> T parseJson(String content, TypeReference<T> typeReference) {
-        log.info("::::parseJson:::");
-        if (content == null || content.isEmpty()) {
-            return null;
+        log.debug("::::parseJson::: content length={}", content == null ? 0 : content.length());
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("content is empty");
         }
         String jsonData = JsonStringExtractor.extractJsonFromString(content);
-        log.info("추출된 jsonData: {}", jsonData);
-        ObjectMapper objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
         try {
             return objectMapper.readValue(jsonData, typeReference);
         } catch (JsonProcessingException e) {
-            log.error(":::: JSON 파싱 실패 ::::");
+            log.error(":::: JSON 파싱 실패 :::: {}", e.getMessage(), e);
             throw new RuntimeException(e);
         }
     }
