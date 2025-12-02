@@ -1,5 +1,6 @@
 package com.example.projectaianalyzer.domain.project.service;
 
+import com.example.projectaianalyzer.domain.project.model.FileInfo;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -18,10 +19,13 @@ import static org.mockito.Mockito.*;
 class ProjectFileScannerImplTest {
 
     @Mock
-    private ProjectFileClassifier projectFileClassifier;
+    private ProjectTypeDetector projectTypeDetector;
 
     @Mock
-    private ProjectTypeDetector projectTypeDetector;
+    private FileMetadataExtractor fileMetadataExtractor;
+
+    @Mock
+    private ProjectWalker projectWalker;
 
     @InjectMocks
     private ProjectFileScannerImpl scanner;
@@ -33,10 +37,35 @@ class ProjectFileScannerImplTest {
         Path fileA = Files.writeString(src.resolve("A.java"), "package a; class A {}");
         Path fileB = Files.writeString(src.resolve("B.java"), "package b; class B {}");
 
-        when(projectFileClassifier.classifyExtension(any())).thenReturn("java");
-        when(projectFileClassifier.classifyRole(any())).thenReturn("service");
+        // lenient로 처리: 호출 여부가 환경마다 달라질 수 있으므로 불필요한 stubbing 오류 방지
+        lenient().when(projectWalker.walkFiles(any(Path.class))).thenReturn(java.util.stream.Stream.of(fileA, fileB));
+        lenient().when(projectWalker.walkFiles(any(Path.class), anyInt())).thenReturn(java.util.stream.Stream.empty());
 
-        when(projectTypeDetector.detectFramework(any())).thenReturn(null);
+        lenient().when(fileMetadataExtractor.extract(eq(fileA), any(), any())).thenReturn(
+                FileInfo.builder()
+                        .fileName("A.java")
+                        .relativePath("src/main/java/A.java")
+                        .absolutePath(fileA.toString())
+                        .extension("java")
+                        .role("service")
+                        .content("")
+                        .projectInfo(null)
+                        .build()
+        );
+        lenient().when(fileMetadataExtractor.extract(eq(fileB), any(), any())).thenReturn(
+                FileInfo.builder()
+                        .fileName("B.java")
+                        .relativePath("src/main/java/B.java")
+                        .absolutePath(fileB.toString())
+                        .extension("java")
+                        .role("service")
+                        .content("")
+                        .projectInfo(null)
+                        .build()
+        );
+
+        // projectTypeDetector는 detectFramework 호출이 없을 수도 있으니 lenient로 둬도 안전
+        lenient().when(projectTypeDetector.detectFramework(any())).thenReturn(null);
 
         FileScannerResult result = scanner.scanProjectDirectory(
                 tempDir.toString()
@@ -44,9 +73,6 @@ class ProjectFileScannerImplTest {
 
         assertNotNull(result);
         assertEquals(2, result.fileInfoList().size(), "임시 디렉토리에 생성한 파일 수와 일치해야 한다.");
-
-        verify(projectFileClassifier, atLeast(1)).classifyExtension(any());
-        verify(projectFileClassifier, atLeast(1)).classifyRole(any());
     }
 
     @Test
@@ -68,6 +94,7 @@ class ProjectFileScannerImplTest {
         Path fake = tempDir.resolve("fake.java");
         Files.writeString(fake, "class Fake{}");
 
+        when(projectWalker.walkFiles(any(Path.class), anyInt())).thenReturn(java.util.stream.Stream.of(fake));
         when(projectTypeDetector.detectFramework(any())).thenThrow(new RuntimeException("IO error"));
 
         RuntimeException ex = assertThrows(
