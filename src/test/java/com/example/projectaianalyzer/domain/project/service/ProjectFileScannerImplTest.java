@@ -1,7 +1,5 @@
 package com.example.projectaianalyzer.domain.project.service;
 
-import com.example.projectaianalyzer.domain.project.model.FileInfo;
-import com.example.projectaianalyzer.domain.project.model.ProjectInfo;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -12,8 +10,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -42,14 +38,12 @@ class ProjectFileScannerImplTest {
 
         when(projectTypeDetector.detectFramework(any())).thenReturn(null);
 
-        List<FileInfo> result = scanner.scanProjectDirectory(
-                tempDir.toString(),
-                new ArrayList<>(),
-                new ArrayList<>()
+        FileScannerResult result = scanner.scanProjectDirectory(
+                tempDir.toString()
         );
 
         assertNotNull(result);
-        assertEquals(2, result.size(), "임시 디렉토리에 생성한 파일 수와 일치해야 한다.");
+        assertEquals(2, result.fileInfoList().size(), "임시 디렉토리에 생성한 파일 수와 일치해야 한다.");
 
         verify(projectFileClassifier, atLeast(1)).classifyExtension(any());
         verify(projectFileClassifier, atLeast(1)).classifyRole(any());
@@ -62,7 +56,7 @@ class ProjectFileScannerImplTest {
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> scanner.scanProjectDirectory(invalidPath, new ArrayList<>(), new ArrayList<>())
+                () -> scanner.scanProjectDirectory(invalidPath)
         );
 
         assertTrue(ex.getMessage().contains("스캔할 프로젝트 경로가 유효하지 않습니다."));
@@ -78,7 +72,7 @@ class ProjectFileScannerImplTest {
 
         RuntimeException ex = assertThrows(
                 RuntimeException.class,
-                () -> scanner.scanProjectDirectory(tempDir.toString(), new ArrayList<>(), new ArrayList<>())
+                () -> scanner.scanProjectDirectory(tempDir.toString())
         );
         assertEquals("IO error", ex.getMessage());
     }
