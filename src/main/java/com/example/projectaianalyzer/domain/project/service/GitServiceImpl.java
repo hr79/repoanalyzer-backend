@@ -26,9 +26,10 @@ public class GitServiceImpl implements GitService {
         int attempt = 0;
         Path absolutePath = Paths.get(filePath).toAbsolutePath();
         log.info("absolutePath: {}", absolutePath);
-        while (attempt < MAX_RETRY_COUNT){
+        while (attempt < MAX_RETRY_COUNT) {
             try {
                 attempt++;
+                log.info("{}회째 시도", attempt);
                 log.info(":::: save project file from git :::");
                 Git.cloneRepository()
                         .setURI(repoUrl)
@@ -40,7 +41,7 @@ public class GitServiceImpl implements GitService {
             } catch (JGitInternalException e) {
                 log.error("git clone failed: {}", e.getMessage(), e);
 
-                if (attempt >= MAX_RETRY_COUNT) {
+                if (attempt > MAX_RETRY_COUNT) {
                     log.error("최대 재시도 횟수에 도달했습니다. 클론 작업을 중단합니다.");
                     throw e;
                 }

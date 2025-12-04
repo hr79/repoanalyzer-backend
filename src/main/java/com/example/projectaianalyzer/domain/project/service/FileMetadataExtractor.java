@@ -14,6 +14,11 @@ public class FileMetadataExtractor {
     private final ProjectFileClassifier projectFileClassifier;
 
     public FileInfo extract(Path path, Path rootPath, ProjectInfo projectInfo) {
+        if (projectFileClassifier.isDocumentFile(path)
+                || projectFileClassifier.isImageFile(path)) {
+            return null;
+        }
+
         String extension = projectFileClassifier.classifyExtension(path);
         String role = projectFileClassifier.classifyRole(path);
 

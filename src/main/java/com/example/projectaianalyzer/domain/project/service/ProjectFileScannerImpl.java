@@ -62,7 +62,7 @@ public class ProjectFileScannerImpl implements ProjectFileScanner {
     }
 
     private List<ProjectInfo> detectProjectTypeBySubDir(String projectPath) {
-        log.debug("::::2. 프로젝트 타입 감지 시작::::");
+        log.debug("::::2. 프로젝트 프레임워크 감지 시작::::");
         List<ProjectInfo> projectInfos = new ArrayList<>();
 
         projectWalker.walkFiles(Paths.get(projectPath), 4)
