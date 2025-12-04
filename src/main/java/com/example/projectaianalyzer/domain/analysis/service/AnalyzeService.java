@@ -4,7 +4,7 @@ import com.example.projectaianalyzer.domain.analysis.dto.FinalAnalysisDto;
 import com.example.projectaianalyzer.domain.analysis.dto.FileStructureAnalysisDto;
 import com.example.projectaianalyzer.domain.project.model.FileInfo;
 import com.example.projectaianalyzer.domain.project.service.FileScannerResult;
-import com.example.projectaianalyzer.domain.project.service.GitService;
+import com.example.projectaianalyzer.domain.project.service.GitServiceImpl;
 import com.example.projectaianalyzer.domain.project.service.ProjectFileScanner;
 import com.example.projectaianalyzer.infra.util.FileStorage;
 import com.example.projectaianalyzer.infra.util.JsonParser;
@@ -23,11 +23,12 @@ public class AnalyzeService {
     private final ProjectFileScanner projectFileScanner;
     private final FileStructureAnalyzeService fileStructureAnalyzeService;
     private final AnalysisManager analysisManager;
-    private final GitService gitService;
+    private final GitServiceImpl gitService;
     private final JsonParser jsonParser;
     private final FileStorage fileStorage;
 
     private final static String BASE_PATH = "tmp/repo/";
+    private final static String ROOT_PATH = "tmp/";
 
     public FinalAnalysisDto analyze(String repoUrl) {
         if (repoUrl == null || repoUrl.isBlank()) {
@@ -48,14 +49,15 @@ public class AnalyzeService {
         List<String> fileStructureSummaries = scannerResult.fileStructureSummaries();
 
         // 3) 검사용 JSON 덤프
-        fileStorage.writeJson(fileInfoList, projectPath + ".json");
+//        fileStorage.writeJson(fileInfoList, ROOT_PATH + projectRootFolderName + "_file_info.json");
 
         // 4) 파일 경로 정보로 가장 먼저 도메인/핵심기능 분석 요청
         String fileStructureAnalysis = fileStructureAnalyzeService.analyzeFileStructure(fileStructureSummaries);
 
         log.info("fileStructureAnalysis : {}", fileStructureAnalysis);
 
-        List<FileStructureAnalysisDto> fileStructureAnalysisDtoList = jsonParser.parseJson(fileStructureAnalysis, new TypeReference<List<FileStructureAnalysisDto>>() {});
+        List<FileStructureAnalysisDto> fileStructureAnalysisDtoList = jsonParser.parseJson(fileStructureAnalysis, new TypeReference<List<FileStructureAnalysisDto>>() {
+        });
 
         if (fileStructureAnalysisDtoList == null || fileStructureAnalysisDtoList.isEmpty()) {
             throw new IllegalArgumentException("files is empty");
@@ -63,9 +65,11 @@ public class AnalyzeService {
 
         log.info(":::: 도메인 중요도 분석 결과를 json 파일로 만듭니다.");
         // 도메인 중요도 분석 결과 json파일 저장
-        fileStorage.writeJson(fileStructureAnalysis, projectPath + "/domainAnalysis.json");
+//        fileStorage.writeJson(fileStructureAnalysis, ROOT_PATH + projectRootFolderName + "_domainAnalysis.json");
 
         FinalAnalysisDto finalAnalysisDto = analysisManager.analyzeByFileStructureResult(fileStructureAnalysisDtoList, fileInfoList, projectPath);
+
+        fileStorage.delete(projectPath);
 
         return finalAnalysisDto;
     }

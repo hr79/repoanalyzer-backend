@@ -59,7 +59,7 @@ class AnalysisManagerImplTest {
                 .thenReturn("{priority}");
         when(domainAnalysisService.analyzeEntireProjectByAllDomains(anyList()))
                 .thenReturn("{final}");
-        doNothing().when(fileStorage).writeJson(any(), anyString()); // writeJson 메서드는 void이므로 별도의 반환값 설정 불필요. 아무것도 안하게 처리.
+//        doNothing().when(fileStorage).writeJson(any(), anyString()); // writeJson 메서드는 void이므로 별도의 반환값 설정 불필요. 아무것도 안하게 처리.
         FinalAnalysisDto expectedDto = new FinalAnalysisDto();
         expectedDto.setProjectOverview("done");
         when(jsonParser.parseJson(eq("{final}"), any(TypeReference.class)))
