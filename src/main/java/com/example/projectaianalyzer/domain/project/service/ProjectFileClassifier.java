@@ -3,9 +3,36 @@ package com.example.projectaianalyzer.domain.project.service;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
+import java.util.Set;
 
 @Component
 public class ProjectFileClassifier {
+    private static final Set<String> DOCUMENT_EXTENSIONS = Set.of(
+            "md", "txt", "doc", "docx", "pdf", "xls", "xlsx",
+            "csv", "rtf", "odt", "ods", "odp", "odg", "odf",
+            "tex", "pages", "key", "numbers", "ppt", "pptx",
+            "epub", "mobi", "azw", "azw3", "djvu", "log",
+            "msg", "eml", "oft", "sxw", "wpd", "wps"
+    );
+
+    public boolean isDocumentFile(Path filePath) {
+        String fileName = filePath.getFileName().toString().toLowerCase();
+        return DOCUMENT_EXTENSIONS.stream()
+                .anyMatch(ext -> fileName.endsWith("." + ext));
+    }
+
+    private static final Set<String> IMAGE_EXTENSIONS = Set.of(
+            "jpg", "jpeg", "png", "gif", "svg", "bmp", "webp",
+            "tiff", "tif", "ico", "psd", "fig", "heic", "avif",
+            "raw", "exr", "tga"
+    );
+
+    public boolean isImageFile(Path filePath) {
+        String fileName = filePath.getFileName().toString().toLowerCase();
+        return IMAGE_EXTENSIONS.stream()
+                .anyMatch(ext -> fileName.endsWith("." + ext));
+    }
+
 
     public String classifyExtension(Path filePath) {
         System.out.println("filePath: " + filePath);
