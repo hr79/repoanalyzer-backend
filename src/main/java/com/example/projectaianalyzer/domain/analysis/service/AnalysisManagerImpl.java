@@ -48,7 +48,8 @@ public class AnalysisManagerImpl implements AnalysisManager {
             List<String> domainLayerAnalysis = new ArrayList<>();
 
             if (filesByPriority == null || filesByPriority.isEmpty()) {
-                throw new IllegalArgumentException(priority + " 중요도의 " + domain + " 도메인 파일이 없습니다.");
+                log.warn(priority + " 중요도의 " + domain + " 도메인 파일이 없습니다.");
+                continue;
             }
 
             switch (priority) {
