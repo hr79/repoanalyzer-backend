@@ -21,6 +21,8 @@ public class AnalysisManagerImpl implements AnalysisManager {
     private final JsonParser jsonParser;
     private final FileStorage fileStorage;
 
+    private final static String ROOT_PATH = "tmp/";
+
     @Override
     public FinalAnalysisDto analyzeByFileStructureResult(
             List<FileStructureAnalysisDto> fileStructureAnalysisDtoList,
@@ -88,8 +90,7 @@ public class AnalysisManagerImpl implements AnalysisManager {
 
         FinalAnalysisDto finalAnalysisDto = jsonParser.parseJson(finalResult, new TypeReference<FinalAnalysisDto>() {
         });
-        fileStorage.writeJson(finalAnalysisDto, projectPath + "/analysis_report_final.json");
-
+//        fileStorage.writeJson(finalAnalysisDto, ROOT_PATH + "analysis_report_final.json");;
         return finalAnalysisDto;
     }
 
