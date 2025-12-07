@@ -19,7 +19,8 @@ public class FileStructureAnalyzeServiceImpl implements FileStructureAnalyzeServ
     @Override
     public String analyzeFileStructure(List<String> fileStructureSummaries) {
         log.info(":::: analyzeFileStructure ::::");
-        return groqClient.analyzeProject(
+
+         return groqClient.analyzeProject(
                 fileStructureSummaries,
                 Map.of("role", "system", "content", PromptRegistry.FILE_STRUCTURE_ANALYSIS_SYSTEM_PROMPT),
                 Map.of("role", "user", "content", PromptRegistry.FILE_STRUCTURE_ANALYSIS_USER_PROMPT + fileStructureSummaries),

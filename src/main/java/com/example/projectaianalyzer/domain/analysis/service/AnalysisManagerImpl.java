@@ -86,7 +86,7 @@ public class AnalysisManagerImpl implements AnalysisManager {
 
         // 최종 도메인 분석
         log.info(":::: 최종 도메인별 분석 결과 종합 ::::");
-        String finalResult = domainAnalysisService.analyzeEntireProjectByAllDomains(resultsByDomain);
+        String finalResult = domainAnalysisService.analyzeFinalByAllResults(resultsByDomain);
         log.info(finalResult);
 
         FinalAnalysisDto finalAnalysisDto = jsonParser.parseJson(finalResult, new TypeReference<FinalAnalysisDto>() {
