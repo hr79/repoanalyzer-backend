@@ -42,7 +42,9 @@ public class ProjectFileScannerImpl implements ProjectFileScanner {
                     log.debug("::::path = {}", path);
                     ProjectInfo projectInfo = findMatchingProjectType(path, projectInfoList);
                     FileInfo fileInfo = fileMetadataExtractor.extract(path, rootPath, projectInfo);
-
+                    if (fileInfo == null) {
+                        return;
+                    }
                     // 파일구조 요약에 필요한 리스트에 상대경로 정보 추가
                     fileStructureSummaries.add(fileInfo.getRelativePath());
                     fileInfoList.add(fileInfo);

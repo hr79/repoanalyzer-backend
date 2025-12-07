@@ -78,7 +78,7 @@ public class DomainAnalysisServiceImpl implements DomainAnalysisService {
         );
     }
 
-    public String analyzeEntireProjectByAllDomains(List<String> resultsByDomain) {
+    public String analyzeFinalByAllResults(List<String> resultsByDomain) {
         log.info(":::: analyzeEntireProjectByAllDomains ::::");
         if (resultsByDomain == null || resultsByDomain.isEmpty()) {
             throw new IllegalArgumentException("files is empty");
