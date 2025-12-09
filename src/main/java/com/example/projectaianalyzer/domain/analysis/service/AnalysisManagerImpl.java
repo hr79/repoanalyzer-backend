@@ -20,6 +20,7 @@ public class AnalysisManagerImpl implements AnalysisManager {
     private final DomainAnalysisService domainAnalysisService;
     private final JsonParser jsonParser;
     private final FileStorage fileStorage;
+    private final DomainTaskRunner domainTaskRunner;
 
     private final static String ROOT_PATH = "tmp/";
 
@@ -37,9 +38,24 @@ public class AnalysisManagerImpl implements AnalysisManager {
         for (FileInfo fileInfo : fileInfoList) {
             fileInfoMap.put(fileInfo.getRelativePath(), fileInfo);
         }
-        List<String> resultsByDomain = new ArrayList<>(); // 각 도메인들의 분석 결과 저장
+//        List<String> resultsByDomain = new ArrayList<>(); // 각 도메인들의 분석 결과 저장
 
         // 도메인 중요도에 따라 작업
+        List<String> resultsByDomain = domainTaskRunner.runAnalyzeDomains(fileStructureAnalysisDtoList, fileInfoMap);
+
+
+        // 최종 도메인 분석
+        log.info(":::: 최종 도메인별 분석 결과 종합 ::::");
+        String finalResult = domainAnalysisService.analyzeFinalByAllResults(resultsByDomain);
+        log.info(finalResult);
+
+        FinalAnalysisDto finalAnalysisDto = jsonParser.parseJson(finalResult, new TypeReference<FinalAnalysisDto>() {
+        });
+//        fileStorage.writeJson(finalAnalysisDto, ROOT_PATH + "analysis_report_final.json");;
+        return finalAnalysisDto;
+    }
+
+    private void runAnalyzeDomain(List<FileStructureAnalysisDto> fileStructureAnalysisDtoList, Map<String, FileInfo> fileInfoMap, List<String> resultsByDomain) {
         for (FileStructureAnalysisDto fileStructureAnalysisDto : fileStructureAnalysisDtoList) {
             String domain = fileStructureAnalysisDto.getDomain();
             String priority = fileStructureAnalysisDto.getPriority();
@@ -83,16 +99,6 @@ public class AnalysisManagerImpl implements AnalysisManager {
             System.out.println(priorityAnalysis);
             resultsByDomain.add(priorityAnalysis);
         }
-
-        // 최종 도메인 분석
-        log.info(":::: 최종 도메인별 분석 결과 종합 ::::");
-        String finalResult = domainAnalysisService.analyzeFinalByAllResults(resultsByDomain);
-        log.info(finalResult);
-
-        FinalAnalysisDto finalAnalysisDto = jsonParser.parseJson(finalResult, new TypeReference<FinalAnalysisDto>() {
-        });
-//        fileStorage.writeJson(finalAnalysisDto, ROOT_PATH + "analysis_report_final.json");;
-        return finalAnalysisDto;
     }
 
     private static String getCleanResult(String result) {
@@ -136,4 +142,6 @@ public class AnalysisManagerImpl implements AnalysisManager {
             fileListByRole.add(fileInfo);
         }
     }
+
+
 }

@@ -14,6 +14,16 @@ public class AnalyzeService {
     private final AnalysisPipeline pipeline;
 
     public FinalAnalysisDto analyze(String repoUrl){
-        return pipeline.run(repoUrl);
+        long start = System.nanoTime();
+        try {
+            return pipeline.run(repoUrl);
+        } finally {
+            long end = System.nanoTime();
+            long elapsedTime = end - start;
+
+            log.info("analyzeService 처리시간: {} ns", elapsedTime);
+            log.info("AnalyzeService 처리시간: {} ms", elapsedTime / 1_000_000);
+            log.info("AnalyzeService 처리시간: {} s", elapsedTime / 1_000_000_000);
+        }
     }
 }
