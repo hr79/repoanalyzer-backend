@@ -21,9 +21,8 @@ public class AnalyzeService {
             long end = System.nanoTime();
             long elapsedTime = end - start;
 
-            log.info("analyzeService 처리시간: {} ns", elapsedTime);
-            log.info("AnalyzeService 처리시간: {} ms", elapsedTime / 1_000_000);
-            log.info("AnalyzeService 처리시간: {} s", elapsedTime / 1_000_000_000);
+            log.info("순차처리 AnalyzeService 처리시간: {} ms", elapsedTime / 1_000_000);
+            log.info("순차처리 AnalyzeService 처리시간: {} s", elapsedTime / 1_000_000_000);
         }
     }
 }

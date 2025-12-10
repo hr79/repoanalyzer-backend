@@ -75,9 +75,8 @@ public class DomainTaskRunner {
             long end = System.nanoTime();
             long elapsedTime = end - start;
 
-            log.info("runAnalyzeDomains 실행시간: {} ns", elapsedTime);
-            log.info("runAnalyzeDomains 실행시간: {} ms", elapsedTime / 1_000_000);
-            log.info("runAnalyzeDomains 실행시간: {} s", elapsedTime / 1_000_000_000);
+            log.info("순차처리 runAnalyzeDomains 실행시간: {} ms", elapsedTime / 1_000_000);
+            log.info("순차처리 runAnalyzeDomains 실행시간: {} s", elapsedTime / 1_000_000_000);
         }
     }
 

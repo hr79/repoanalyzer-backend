@@ -1,7 +1,7 @@
 package com.example.projectaianalyzer.domain.ai.model;
 
 public class GroqAiModelVersionRegistry {
-    public static final String LLAMA_3_3_70B_VERSION = "3.3-70b-versatile";
+    public static final String LLAMA_3_3_70B_VERSION = "llama-3.3-70b-versatile";
     public static final String LLAMA_4_SCOUT_17B_16E_VERSION = "meta-llama/llama-4-scout-17b-16e-instruct";
     public static final String LLAMA_4_MAVERICK_17B_128E = "meta-llama/llama-4-maverick-17b-128e-instruct";
     public static final String LLAMA_3_1_8B_INSTANT_VERSION = "llama-3.1-8b-instant";

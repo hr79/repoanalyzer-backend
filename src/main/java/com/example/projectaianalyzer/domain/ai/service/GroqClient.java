@@ -97,7 +97,7 @@ public class GroqClient {
                     // Retry-After 헤더 우선 처리
                     String retryAfter = e.getResponseHeaders() != null ? e.getResponseHeaders().getFirst("Retry-After") : null;
                     long waitMs = computeBackoffWithJitter(attempt);
-                    long maxWaitMs = Duration.ofMinutes(1).toMillis(); // 최대 대기 시간: 1분(=60,000ms)
+                    long maxWaitMs = Duration.ofSeconds(30).toMillis(); // 최대 대기 시간: 1분(=60,000ms)
                     if (retryAfter != null) {
                         try {
                             // Retry-After가 초 단위 숫자일 경우

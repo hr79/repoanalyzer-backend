@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum GroqAiModel {
-    STRUCTURE_AND_DOMAIN_MAIN(GroqAiModelVersionRegistry.GROQ_COMPOUND),
+    STRUCTURE_AND_DOMAIN_MAIN(GroqAiModelVersionRegistry.LLAMA_3_3_70B_VERSION),
     STRUCTURE_AND_DOMAIN_SUB(GroqAiModelVersionRegistry.GPT_OSS_20B),
     SIGNIFICANT_MAIN(GroqAiModelVersionRegistry.GPT_OSS_120B),
 //    SIGNIFICANT_SUB_2(GroqAiModelVersionRegistry.LLAMA_3_1_8B_INSTANT_VERSION),
