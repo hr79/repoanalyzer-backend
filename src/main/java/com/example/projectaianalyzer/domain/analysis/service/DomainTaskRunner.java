@@ -2,6 +2,7 @@ package com.example.projectaianalyzer.domain.analysis.service;
 
 import com.example.projectaianalyzer.domain.analysis.dto.FileStructureAnalysisDto;
 import com.example.projectaianalyzer.domain.project.model.FileInfo;
+import com.example.projectaianalyzer.infra.util.ResultCleaner;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -18,19 +19,16 @@ public class DomainTaskRunner {
 
     private final DomainAnalysisService domainAnalysisService;
 
-    public List<String> runAnalyzeDomains(List<FileStructureAnalysisDto> fileStructureAnalysisDtoList, Map<String, FileInfo> fileInfoMap) {
-        long start = System.nanoTime();
-        try {
-            List<String> resultsByDomain = new ArrayList<>();
-
-            for (FileStructureAnalysisDto fileStructureAnalysisDto : fileStructureAnalysisDtoList) {
+    public String runAnalyzeDomain(FileStructureAnalysisDto fileStructureAnalysisDto, Map<String, FileInfo> fileInfoMap) {
+//        long start = System.nanoTime();
+//        try {
                 String domain = fileStructureAnalysisDto.getDomain();
                 String priority = fileStructureAnalysisDto.getPriority();
                 List<String> filesByPriority = fileStructureAnalysisDto.getFiles();
 
                 if (filesByPriority == null || filesByPriority.isEmpty()) {
                     log.warn(priority + " 중요도의 " + domain + " 도메인 파일이 없습니다.");
-                    continue;
+                    return null;
                 }
 
                 Map<FileRole, List<FileInfo>> groupedByRole = new HashMap<>();
@@ -40,7 +38,7 @@ public class DomainTaskRunner {
                          groupedByRole = mapDomainFilesByRole(filesByPriority, fileInfoMap);
                     }
                     case "low" -> {
-                        continue;
+                        return null;
                     }
                 }
                 if (groupedByRole.isEmpty()) {
@@ -53,7 +51,7 @@ public class DomainTaskRunner {
                     if (files != null && !files.isEmpty()) {
                         log.info(":::: {} 중요도/ {} 도메인의 {} 레이어 분석을 시작합니다.", priority, domain, role);
                         String result = domainAnalysisService.analyzeByRole(priority, role, files);
-                        result = getCleanResult(result);
+                        result = ResultCleaner.getCleanResult(result);
                         domainLayerAnalysis.add(result);
                     } else {
                         log.info(":::: {} 중요도/ {} 도메인의 {} 레이어 파일이 없습니다.", priority, domain, role);
@@ -61,31 +59,23 @@ public class DomainTaskRunner {
                 });
 
                 if (domainLayerAnalysis.isEmpty()) {
-                    continue;
+                    return null;
                 }
                 log.info(":::: {} 중요도의 {} 도메인 분석을 시작합니다.", priority, domain);
                 String priorityAnalysis = domainAnalysisService.analyzeDomainByPriority(priority, domain, domainLayerAnalysis);
-                priorityAnalysis = getCleanResult(priorityAnalysis);
+                priorityAnalysis = ResultCleaner.getCleanResult(priorityAnalysis);
                 System.out.println(priorityAnalysis);
-                resultsByDomain.add(priorityAnalysis);
-            }
 
-            return resultsByDomain;
-        } finally {
-            long end = System.nanoTime();
-            long elapsedTime = end - start;
+                return priorityAnalysis;
 
-            log.info("runAnalyzeDomains 실행시간: {} ns", elapsedTime);
-            log.info("runAnalyzeDomains 실행시간: {} ms", elapsedTime / 1_000_000);
-            log.info("runAnalyzeDomains 실행시간: {} s", elapsedTime / 1_000_000_000);
-        }
-    }
-
-    private static String getCleanResult(String result) {
-        return result.replaceAll("(?s)<think>.*?</think>", "")
-                .replaceAll("```json", "")
-                .replaceAll("```", "")
-                .trim();
+//        } finally {
+//            long end = System.nanoTime();
+//            long elapsedTime = end - start;
+//
+//            log.info("runAnalyzeDomains 실행시간: {} ns", elapsedTime);
+//            log.info("runAnalyzeDomains 실행시간: {} ms", elapsedTime / 1_000_000);
+//            log.info("runAnalyzeDomains 실행시간: {} s", elapsedTime / 1_000_000_000);
+//        }
     }
 
     private Map<FileRole, List<FileInfo>> mapDomainFilesByRole(List<String> filesByPriority,
