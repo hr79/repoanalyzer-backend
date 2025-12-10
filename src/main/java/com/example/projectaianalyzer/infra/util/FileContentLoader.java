@@ -14,7 +14,7 @@ public class FileContentLoader {
         try {
             content = Files.readString(filePath);
         } catch (IOException e) {
-            log.error("파일을 읽을 수 없음 : {}", e.getMessage());
+            log.warn("파일을 읽을 수 없음 : {}", e.getMessage());
             return "";
         }
         if (content.isBlank() || content.isEmpty() || content.length() == 1) {
