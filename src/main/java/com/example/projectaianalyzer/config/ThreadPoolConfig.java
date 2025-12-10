@@ -8,18 +8,17 @@ import java.util.concurrent.*;
 @Configuration
 public class ThreadPoolConfig {
     @Bean("analysisExecutor")
-    public ExecutorService analysisExecutor(){
-        int cores = Math.max(2, Runtime.getRuntime().availableProcessors());
-        int poolSize = cores; // 스레드 수를 cpu 코어 수로 설정, 필요 시 core * 2 같이 조정
+    public ExecutorService analysisExecutor() {
+        int threads = 6;
+
         ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(
-                poolSize,
-                poolSize,
-                60L, TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>(1000),
+                threads,
+                threads,
+                0L, TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(30), // 큐 짧게 설정
                 Executors.defaultThreadFactory(),
-                new ThreadPoolExecutor.CallerRunsPolicy() // 오버플로우시 호출 스레드에서 실행
+                new ThreadPoolExecutor.AbortPolicy() // 오버플로우 시 즉시 실패
         );
-        poolExecutor.allowCoreThreadTimeOut(true);
 
         return Executors.unconfigurableExecutorService(poolExecutor);
     }
