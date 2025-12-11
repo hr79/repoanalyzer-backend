@@ -24,7 +24,7 @@ public class GroqClient {
     private String groqApiKey;
 
     // 재시도 관련 설정 (application.properties 또는 application.yml로 오버라이드 가능)
-    @Value("${groq.retry.max:5}")
+    @Value("${groq.retry.max:3}")
     private int maxRetries;
 
     @Value("${groq.retry.base-delay-ms:1000}")
