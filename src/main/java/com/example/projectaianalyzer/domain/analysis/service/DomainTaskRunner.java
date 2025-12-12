@@ -64,7 +64,7 @@ public class DomainTaskRunner {
                 log.info(":::: {} 중요도의 {} 도메인 분석을 시작합니다.", priority, domain);
                 String priorityAnalysis = domainAnalysisService.analyzeDomainByPriority(priority, domain, domainLayerAnalysis);
                 priorityAnalysis = ResultCleaner.getCleanResult(priorityAnalysis);
-                System.out.println(priorityAnalysis);
+                log.info("domain: {}, priority: {}, result: {}", domain, priority, priorityAnalysis);
 
                 return priorityAnalysis;
 
@@ -103,7 +103,7 @@ public class DomainTaskRunner {
             }
 
             String role = fileInfo.getRole();
-            log.info(":::: role: {}", role);
+//            log.info(":::: role: {}", role);
             FileRole fileRole = FileRole.from(role);
             if (fileRole == null) {
                 continue;
