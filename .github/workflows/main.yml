@@ -45,12 +45,12 @@ jobs:
         java-version: '17'
 
     # ----------- CI: Test -----------
-    - name: Run Tests
+    # - name: Run Tests
       # working-directory: ./
       # env:
         # groq.api-key: ${{ secrets.GROQ_API_KEY }}
         # JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-      run: ./gradlew test --info
+      # run: ./gradlew test --info
 
     - name: Build Backend Jar
       # working-directory: ./

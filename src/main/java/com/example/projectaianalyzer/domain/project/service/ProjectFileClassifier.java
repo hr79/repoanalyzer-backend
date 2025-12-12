@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
 import java.util.Set;
+import java.util.Map;
 
 @Component
 public class ProjectFileClassifier {
@@ -33,73 +34,118 @@ public class ProjectFileClassifier {
                 .anyMatch(ext -> fileName.endsWith("." + ext));
     }
 
+    private static final Map<String, String> EXTENSION_TYPES = Map.ofEntries(
+            Map.entry("java", "JAVA"),
+            Map.entry("kt", "KOTLIN"),
+            Map.entry("py", "PYTHON"),
+            Map.entry("js", "JAVASCRIPT"),
+            Map.entry("ts", "TYPESCRIPT"),
+            Map.entry("dart", "DART"),
+            Map.entry("cs", "CSHARP"),
+            Map.entry("c", "C"),
+            Map.entry("cpp", "CPP"),
+            Map.entry("h", "HEADER"),
+            Map.entry("php", "PHP"),
+            Map.entry("rb", "RUBY"),
+            Map.entry("swift", "SWIFT"),
+            Map.entry("html", "HTML"),
+            Map.entry("css", "CSS"),
+            Map.entry("json", "JSON"),
+            Map.entry("yaml", "YAML"),
+            Map.entry("yml", "YAML"),
+            Map.entry("xml", "XML"),
+            Map.entry("properties", "PROPERTIES"),
+            Map.entry("env", "ENV"),
+            Map.entry("md", "MARKDOWN")
+    );
 
     public String classifyExtension(Path filePath) {
         System.out.println("filePath: " + filePath);
         String fileName = filePath.getFileName().toString().toLowerCase();
-
-        if (fileName.endsWith(".java")) return "JAVA";
-        if (fileName.endsWith(".kt")) return "KOTLIN";
-        if (fileName.endsWith(".py")) return "PYTHON";
-        if (fileName.endsWith(".js")) return "JAVASCRIPT";
-        if (fileName.endsWith(".ts")) return "TYPESCRIPT";
-        if (fileName.endsWith(".dart")) return "DART";
-        if (fileName.endsWith(".cs")) return "CSHARP";
-        if (fileName.endsWith(".c")) return "C";
-        if (fileName.endsWith(".cpp")) return "CPP";
-        if (fileName.endsWith(".h")) return "HEADER";
-        if (fileName.endsWith(".php")) return "PHP";
-        if (fileName.endsWith(".rb")) return "RUBY";
-        if (fileName.endsWith(".swift")) return "SWIFT";
-        if (fileName.endsWith(".html")) return "HTML";
-        if (fileName.endsWith(".css")) return "CSS";
-        if (fileName.endsWith(".json")) return "JSON";
-        if (fileName.endsWith(".yaml") || fileName.endsWith(".yml")) return "YAML";
-        if (fileName.endsWith(".xml")) return "XML";
-        if (fileName.endsWith(".properties")) return "PROPERTIES";
-        if (fileName.endsWith(".env")) return "ENV";
-        if (fileName.endsWith(".md")) return "MARKDOWN";
-
-        return "OTHER";
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex == -1 || dotIndex == fileName.length() - 1) {
+            return "OTHER";
+        }
+        String ext = fileName.substring(dotIndex + 1);
+        return EXTENSION_TYPES.getOrDefault(ext, "OTHER");
     }
 
     public String classifyRole(Path filePath) {
-        String pathString = filePath.toString().toLowerCase();
-        String fileName = filePath.getFileName().toString().toLowerCase();
+        String path = filePath.toString().toLowerCase();
+        String file = filePath.getFileName().toString().toLowerCase();
 
-        // Backend MVC + extended architecture
-        if (pathString.contains("/controller/") || fileName.contains("controller")) return "controller";
-        if (pathString.contains("/service/") || fileName.contains("service")) return "service";
-        if (pathString.contains("/repository/") || fileName.contains("repository") ||
-            pathString.contains("/dao/") || fileName.contains("dao")) return "repository";
-        if (pathString.contains("/dto/") || fileName.contains("dto")) return "dto";
-        if (pathString.contains("/config/") || fileName.contains("config") || fileName.endsWith(".properties")) return "configuration";
-        if (pathString.contains("/util/") || pathString.contains("/helper/") || fileName.contains("util") || fileName.contains("helper")) return "utility";
-        if (pathString.contains("/filter/") || fileName.contains("filter")) return "filter";
-        if (pathString.contains("/interceptor/") || fileName.contains("interceptor")) return "interceptor";
-        if (pathString.contains("/exception/") || fileName.contains("exception")) return "exception";
+        // Ordered matching rules
+        record Rule(String keyword, String role) {}
+        Rule[] rules = new Rule[] {
+                new Rule("/controller", "controller"),
+                new Rule("controller", "controller"),
 
-        // Model / Entity / Domain-based detection
-        if (pathString.contains("/entity/") || pathString.contains("/model/") || pathString.contains("/domain/")) {
-            if (!fileName.contains("controller") && !fileName.contains("service") &&
-                !fileName.contains("repository") && !fileName.contains("config") &&
-                !fileName.contains("dto")) {
-                return "model";
+                new Rule("/service", "service"),
+                new Rule("service", "service"),
+
+                new Rule("/repository", "repository"),
+                new Rule("repository", "repository"),
+                new Rule("/dao", "repository"),
+                new Rule("dao", "repository"),
+
+                new Rule("/dto", "dto"),
+                new Rule("dto", "dto"),
+
+                new Rule("/config", "configuration"),
+                new Rule("config", "configuration"),
+                new Rule(".properties", "configuration"),
+
+                new Rule("/util", "utility"),
+                new Rule("/helper", "utility"),
+                new Rule("util", "utility"),
+                new Rule("helper", "utility"),
+
+                new Rule("/filter", "filter"),
+                new Rule("filter", "filter"),
+
+                new Rule("/interceptor", "interceptor"),
+                new Rule("interceptor", "interceptor"),
+
+                new Rule("/exception", "exception"),
+                new Rule("exception", "exception"),
+
+                new Rule("/test", "test"),
+                new Rule("test", "test"),
+
+                new Rule("/component", "frontend-component"),
+                new Rule("/components", "frontend-component"),
+
+                new Rule("/pages", "frontend-view"),
+                new Rule("/views", "frontend-view"),
+
+                new Rule("/store", "frontend-state"),
+                new Rule("/state", "frontend-state"),
+
+                new Rule("/hooks", "frontend-hook"),
+
+                new Rule("/assets", "frontend-asset"),
+                new Rule("/static", "frontend-asset"),
+
+                new Rule("/common", "common"),
+                new Rule("common", "common")
+        };
+
+        for (Rule rule : rules) {
+            if (path.contains(rule.keyword()) || file.contains(rule.keyword())) {
+                return rule.role();
             }
         }
 
-        // Test files
-        if (pathString.contains("/test/") || fileName.contains("test")) return "test";
-
-        // Frontend structure detection
-        if (pathString.contains("/component/") || pathString.contains("/components/")) return "frontend-component";
-        if (pathString.contains("/pages/") || pathString.contains("/views/")) return "frontend-view";
-        if (pathString.contains("/store/") || pathString.contains("/state/")) return "frontend-state";
-        if (pathString.contains("/hooks/")) return "frontend-hook";
-        if (pathString.contains("/assets/") || pathString.contains("/static/")) return "frontend-asset";
-
-        // Common/shared layer
-        if (pathString.contains("/common/") || fileName.contains("common")) return "common";
+        // Model detection (special case)
+        if (path.contains("/entity") || path.contains("/model") || path.contains("/domain")) {
+            if (!file.contains("controller")
+                    && !file.contains("service")
+                    && !file.contains("repository")
+                    && !file.contains("config")
+                    && !file.contains("dto")) {
+                return "model";
+            }
+        }
 
         return "other";
     }
