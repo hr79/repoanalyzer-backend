@@ -34,7 +34,7 @@ public class DomainTaskRunner {
                 Map<FileRole, List<FileInfo>> groupedByRole = new HashMap<>();
 
                 switch (priority) {
-                    case "significant", "high", "medium" -> {
+                    case "critical", "significant", "high", "medium-high", "medium" -> {
                          groupedByRole = mapDomainFilesByRole(filesByPriority, fileInfoMap);
                     }
                     case "low" -> {
@@ -109,12 +109,12 @@ public class DomainTaskRunner {
                 continue;
             }
             List<FileInfo> fileListByRole = groupedByRole.get(fileRole);
-            if (fileListByRole == null) {
-                List<FileInfo> roleFileList = new ArrayList<>();
-                groupedByRole.put(fileRole, roleFileList);
-                roleFileList.add(fileInfo);
-                continue;
-            }
+//            if (fileListByRole == null) {
+//                List<FileInfo> roleFileList = new ArrayList<>();
+//                groupedByRole.put(fileRole, roleFileList);
+//                roleFileList.add(fileInfo);
+//                continue;
+//            }
             fileListByRole.add(fileInfo);
         }
         return groupedByRole;

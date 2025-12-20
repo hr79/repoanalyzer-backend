@@ -41,9 +41,9 @@ public class DomainAnalysisServiceImpl implements DomainAnalysisService {
             throw new RuntimeException(e);
         }
 
-        PriorityStrategy priorityStrategy = PriorityStrategy.from(priority);
-        String defaultModel = priorityStrategy.getDefaultModel();
-        String fallbackModel = priorityStrategy.getFallbackModel();
+        PriorityDomainPromptAndGroqModel priorityStrategy = PriorityDomainPromptAndGroqModel.from(priority);
+        String defaultModel = priorityStrategy.defaultModel();
+        String fallbackModel = priorityStrategy.fallbackModel();
 
         String userMessage = PromptRegistry.DOMAIN_ROLE_ANALYSIS_USER_MESSAGE_PROMPT + jsonString;
 

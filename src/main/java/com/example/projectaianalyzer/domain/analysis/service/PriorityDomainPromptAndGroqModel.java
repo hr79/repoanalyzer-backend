@@ -5,6 +5,12 @@ import com.example.projectaianalyzer.domain.ai.model.GroqAiModel;
 
 public enum PriorityDomainPromptAndGroqModel {
 
+    CRITICAL(
+            PromptRegistry.CRITICAL_DOMAIN_ANALYSIS_SYSTEM_PROMPT,
+            PromptRegistry.CRITICAL_DOMAIN_ANALYSIS_USER_PROMPT,
+            GroqAiModel.CRITICAL_MAIN.getModelVersion(),
+            GroqAiModel.CRITICAL_SUB.getModelVersion()
+    ),
     SIGNIFICANT(
             PromptRegistry.SIGNIFICANT_PRIORITY_DOMAIN_SYSTEM_MESSAGE_PROMPT,
             PromptRegistry.SIGNIFICANT_PRIORITY_DOMAIN_USER_MESSAGE_PROMPT,
@@ -16,6 +22,11 @@ public enum PriorityDomainPromptAndGroqModel {
             PromptRegistry.HIGH_PRIORITY_DOMAIN_USER_MESSAGE_PROMPT,
             GroqAiModel.HIGH_MAIN.getModelVersion(),
             GroqAiModel.HIGH_SUB.getModelVersion()
+    ),
+    MEDIUM_HIGH(PromptRegistry.MEDIUM_HIGH_DOMAIN_ANALYSIS_SYSTEM_PROMPT,
+            PromptRegistry.MEDIUM_HIGH_DOMAIN_ANALYSIS_USER_PROMPT,
+            GroqAiModel.MEDIUM_HIGH_MAIN.getModelVersion(),
+            GroqAiModel.MEDIUM_HIGH_SUB.getModelVersion()
     ),
     MEDIUM(
             PromptRegistry.MEDIUM_PRIORITY_DOMAIN_SYSTEM_MESSAGE_PROMPT,
@@ -54,8 +65,10 @@ public enum PriorityDomainPromptAndGroqModel {
 
     public static PriorityDomainPromptAndGroqModel from(String priority) {
         return switch (priority) {
+            case "critical" -> CRITICAL;
             case "significant" -> SIGNIFICANT;
             case "high" -> HIGH;
+            case "medium-high" -> MEDIUM_HIGH;
             case "medium" -> MEDIUM;
             default -> throw new IllegalArgumentException("Unknown priority: " + priority);
         };

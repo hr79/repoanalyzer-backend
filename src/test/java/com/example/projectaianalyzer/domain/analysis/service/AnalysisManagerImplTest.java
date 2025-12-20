@@ -42,8 +42,8 @@ class AnalysisManagerImplTest {
     @DisplayName("Given valid structures When analyze Then return FinalAnalysisDto")
     void Given_ValidStructures_When_Analyze_Then_ReturnFinal() {
         List<FileStructureAnalysisDto> structureList = List.of(
-                new FileStructureAnalysisDto("domainA", List.of("A.java"), "high", "reason"),
-                new FileStructureAnalysisDto("domainB", List.of("B.java"), "medium", "reason")
+                new FileStructureAnalysisDto("domainA", List.of("A.java"), 75, "high", "reason"),
+                new FileStructureAnalysisDto("domainB", List.of("B.java"), 60, "medium", "reason")
         );
 
         // FileInfo constructor: (fileName, relativePath, absolutePath, extension, role, projectInfo, content, summary)
@@ -78,7 +78,7 @@ class AnalysisManagerImplTest {
     @DisplayName("빈 파일 목록을 넣으면 analyzeByFileStructureResult에서 바로 IllegalArgumentException을 던진다.")
     void Given_MissingFiles_When_Analyze_Then_Throw() {
         List<FileStructureAnalysisDto> structureList = List.of(
-                new FileStructureAnalysisDto("domainA", List.of(), "high", "reason")
+                new FileStructureAnalysisDto("domainA", List.of(), 70,"high", "reason")
         );
 
         assertThrows(IllegalArgumentException.class,

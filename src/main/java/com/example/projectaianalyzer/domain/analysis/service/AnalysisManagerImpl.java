@@ -30,7 +30,7 @@ public class AnalysisManagerImpl implements AnalysisManager {
             List<FileInfo> fileInfoList,
             String projectPath
     ) {
-        // 구조분석 결과로 나온 파일들과 빠르게 매칭하기 위해 fileinfolist를 map으로 구성
+        // 구조분석 결과로 나온 파일들과 빠르게 매칭하기 위해 전체 파일 정보 fileinfolist를 map으로 구성
         if (fileInfoList == null || fileInfoList.isEmpty()) {
             throw new IllegalArgumentException("전체 파일 정보들이 없습니다.");
         }
