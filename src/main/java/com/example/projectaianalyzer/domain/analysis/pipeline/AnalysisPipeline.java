@@ -29,7 +29,8 @@ public class AnalysisPipeline {
         FileScannerResult fileScannerResult = scanProjectStep.execute(path);
         List<String> fileStructureSummaries = fileScannerResult.fileStructureSummaries();
         List<FileStructureAnalysisDto> fileStructureAnalysisResults = analyzeFileStructureStep.execute(fileStructureSummaries);
-        FinalAnalysisDto finalAnalysisDto = domainAnalysisStep.execute(new DomainAnalysisInput(
+        FinalAnalysisDto finalAnalysisDto = domainAnalysisStep.execute(
+                new DomainAnalysisInput(
                         fileStructureAnalysisResults,
                         fileScannerResult.fileInfoList(),
                         path

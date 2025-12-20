@@ -1,55 +1,80 @@
 package com.example.projectaianalyzer.common;
 
 public class PromptRegistry {
-    public static final String FILE_STRUCTURE_ANALYSIS_SYSTEM_PROMPT = "You are an expert software codebase analyst.\n" +
-            "Your goal is to analyze the given file structure and return:\n" +
-            "1) Functional domains in the project\n" +
-            "2) Grouping of files into each domain\n" +
-            "3) Priority score (String Type) for each domain (significant, high, medium, low) based on business impact, coupling level, and expected logic density\n" +
-            "4) A short reason for each priority score\n" +
-            "\n" +
-            "Important rule:\n" +
-            "- Domains MUST be derived from business-level functionality (e.g., authentication, posting, billing, product management),\n" +
-            "  NOT from technical layers such as frontend/backend, controllers, services, or folders.\n" +
-            "- Do NOT divide domains by technology stack, framework, or file type.\n" +
-            "\n" +
-            "Do not request source code.\n" +
-            "Do not rewrite or reanalyze previous messages.\n" +
-            "Keep output concise and strictly structured.\n" +
-            "\n" +
-            "When returning the final result:\n" +
-            "- Return ONLY valid JSON in the specified structure.\n" +
-            "- Do NOT include explanations, descriptions, comments, markdown, code fences, tags, or any text outside the JSON.\n" +
-            "- Response MUST consist solely of a JSON array.";
+    public static final String FILE_STRUCTURE_ANALYSIS_SYSTEM_PROMPT =
+            "You are an expert software codebase analyst.\n" +
+                    "Your task is to analyze a project ONLY from its file path structure and produce a domain-level classification.\n" +
+                    "\n" +
+                    "You MUST return:\n" +
+                    "1) Business-level functional domains\n" +
+                    "2) File grouping per domain\n" +
+                    "3) A numeric priorityScore (0–100) per domain\n" +
+                    "4) A derived priority level based strictly on the score\n" +
+                    "5) A short reason for the assigned priority\n" +
+                    "\n" +
+                    "Priority levels and score mapping (STRICT):\n" +
+                    "- 90–100  → critical\n" +
+                    "- 80–89   → significant\n" +
+                    "- 70–79   → high\n" +
+                    "- 56–69   → medium-high\n" +
+                    "- 40–55   → medium\n" +
+                    "- 0–39    → low\n" +
+                    "\n" +
+                    "Domain count constraints (MUST be enforced):\n" +
+                    "- critical: max 1 domain\n" +
+                    "- significant: max 2 domains\n" +
+                    "- high: max 2 domains\n" +
+                    "- medium-high: max 2 domains\n" +
+                    "- medium: max 2 domains\n" +
+                    "- low: no limit\n" +
+                    "\n" +
+                    "Important rules:\n" +
+                    "- Domains MUST be based on business functionality (authentication, order, billing, inventory, etc.)\n" +
+                    "- Domains MUST NOT be based on technical layers (controller/service/repository), frameworks, or frontend/backend separation\n" +
+                    "- If too many domains compete for a higher priority, you MUST downgrade the less critical ones to the next lower level\n" +
+                    "\n" +
+                    "Do NOT request source code.\n" +
+                    "Do NOT reanalyze or reference previous messages.\n" +
+                    "Keep output concise and strictly structured.\n" +
+                    "\n" +
+                    "Final output rules:\n" +
+                    "- Return ONLY valid JSON\n" +
+                    "- No explanations, markdown, comments, or extra text\n" +
+                    "- Response MUST be a JSON array.";
 
-    public static final String FILE_STRUCTURE_ANALYSIS_USER_PROMPT = "Below is the file path structure of an entire frontend or backend or both project.\n" +
-            "Based on only this structure information, identify:\n" +
-            "- Functional domains (MUST be based on business functionality, not frontend/backend or technical layers)\n" +
-            "- Domain-level grouping\n" +
-            "- Relative importance (significant, high, medium, low)\n" +
-            "- Short reasoning for each domain’s priority\n" +
-            "\n" +
-            "Domains must NOT be based on technical categories such as:\n" +
-            "- frontend vs backend\n" +
-            "- controllers, services, repositories\n" +
-            "- framework-specific folders\n" +
-            "\n" +
-            "Return the result in the following format ONLY:\n" +
-            "[\n" +
-            "  {\n" +
-            "    \"domain\": \"\",\n" +
-            "    \"files\": [],\n" +
-            "    \"priority\": \"medium\",\n" +
-            "    \"reason\": \"\"\n" +
-            "  }\n" +
-            "]\n" +
-            "\n" +
-            "Rules:\n" +
-            "- Output MUST be strictly valid JSON.\n" +
-            "- Do NOT include any text outside the JSON.\n" +
-            "- Do NOT include markdown fences or explanatory notes.\n" +
-            "\n" +
-            "File Structure:\n";
+    public static final String FILE_STRUCTURE_ANALYSIS_USER_PROMPT =
+            "Below is the file path structure of an entire project.\n" +
+                    "\n" +
+                    "Based ONLY on this structure, identify:\n" +
+                    "- Business-level functional domains\n" +
+                    "- Files belonging to each domain\n" +
+                    "- priorityScore (0–100)\n" +
+                    "- priority derived from the score\n" +
+                    "- Short reasoning for the priority\n" +
+                    "\n" +
+                    "STRICT rules:\n" +
+                    "- Domains must represent business functionality, NOT technical layers\n" +
+                    "- Do NOT classify by frontend/backend, framework, or folder role\n" +
+                    "- Enforce the maximum domain count per priority level\n" +
+                    "- If a level exceeds its limit, downgrade excess domains\n" +
+                    "\n" +
+                    "Return ONLY the following JSON format:\n" +
+                    "[\n" +
+                    "  {\n" +
+                    "    \"domain\": \"\",\n" +
+                    "    \"files\": [],\n" +
+                    "    \"priorityScore\": 0,\n" +
+                    "    \"priority\": \"medium\",\n" +
+                    "    \"reason\": \"\"\n" +
+                    "  }\n" +
+                    "]\n" +
+                    "\n" +
+                    "Rules:\n" +
+                    "- Output MUST be strictly valid JSON.\n" +
+                    "- Do NOT include any text outside the JSON.\n" +
+                    "- Do NOT include markdown fences or explanatory notes.\n" +
+                    "\n" +
+                    "File Structure:\n";
 
     public static final String DOMAIN_ROLE_ANALYSIS_SYSTEM_PROMPT = "You are a senior full-stack architecture analyst. \n" +
             "You must analyze ONLY the code provided, without guessing missing functionality or inventing unshown components.\n" +
@@ -94,8 +119,8 @@ public class PromptRegistry {
             "   }\n" +
             "6) You are an AI code analyzer. Always return only valid JSON as output.\n" +
             "Do NOT include any internal reasoning, explanations, thoughts, or <think> blocks.\n" +
-            "The output must start with `[` or `{` and end with `]` or `}`.\n"+
-            "\n"+
+            "The output must start with `[` or `{` and end with `]` or `}`.\n" +
+            "\n" +
             "You must additionally evaluate:\n" +
             "- performance considerations (complexity, potential bottlenecks, heavy I/O, redundant operations)\n" +
             "- security considerations (input validation, authentication/authorization usage, exposure points)\n" +
@@ -115,6 +140,58 @@ public class PromptRegistry {
             "\n" +
             "Files:\n";
 
+    public static final String CRITICAL_DOMAIN_ANALYSIS_SYSTEM_PROMPT =
+            "You are a senior-level software architect analyzing CRITICAL business domains.\n" +
+                    "These domains represent system-wide failure points.\n" +
+                    "\n" +
+                    "Focus on:\n" +
+                    "- Core business responsibility\n" +
+                    "- Data consistency and transaction boundaries\n" +
+                    "- Cross-domain coupling risk\n" +
+                    "- Performance and scalability risks\n" +
+                    "\n" +
+                    "Do NOT summarize superficially.\n" +
+                    "Do NOT describe general architecture patterns.\n" +
+                    "Base analysis on file paths and inferred responsibilities.\n" +
+                    "\n" +
+                    "Return concise but high-density technical insights.\n" +
+                    "Your final output must strictly follow this JSON structure:\n" +
+                    "\n" +
+                    "[\n" +
+                    "  {\n" +
+                    "    \"domain\": \"string\",\n" +
+                    "    \"summary\": \"string\",\n" +
+                    "    \"architecture\": \"string\",\n" +
+                    "    \"key_flows\": \"string\",\n" +
+                    "    \"key_classes\": [\"string\", ...],\n" +
+                    "    \"risks\": [\"string\", ...],\n" +
+                    "    \"improvement\": [\"string\", ...]\n" +
+                    "    \"performance_profile\": \"string\",\n" +
+                    "    \"security_assessment\": \"string\",\n" +
+                    "    \"data_model_notes\": \"string\",\n" +
+                    "    \"testability_notes\": \"string\",\n" +
+                    "    \"dependency_risks\": \"string\",\n" +
+                    "    \"code_quality_assessment\": \"string\"\n" +
+                    "  }\n" +
+                    "]\n" +
+                    "\n" +
+                    "Return only valid JSON with no explanation or commentary.\n" +
+                    "Output must be valid JSON only.";
+
+    public static final String CRITICAL_DOMAIN_ANALYSIS_USER_PROMPT =
+            "Analyze the following CRITICAL domain.\n" +
+                    "\n" +
+                    "Provide:\n" +
+                    "- Core responsibility\n" +
+                    "- Key risks\n" +
+                    "- Data and transaction considerations\n" +
+                    "- Scalability and performance concerns\n" +
+                    "\n" +
+                    "Return ONLY valid JSON.\n" +
+                    "No markdown, no explanations outside JSON.\n" +
+                    "\n" +
+                    "Domain name and file paths:\n";
+
     public static final String SIGNIFICANT_PRIORITY_DOMAIN_SYSTEM_MESSAGE_PROMPT = "You are an expert software architecture analyst.  \n" +
             "Your task is to deeply analyze all files belonging to high-impact domains of a software project.\n" +
             "\n" +
@@ -130,7 +207,7 @@ public class PromptRegistry {
             "3. cross-domain interactions\n" +
             "4. architectural patterns and violations\n" +
             "5. scalability issues\n" +
-            "6. security risks\n" +
+            "6. key risks\n" +
             "7. maintainability problems\n" +
             "\n" +
             "Your final output must strictly follow this JSON structure:\n" +
@@ -149,7 +226,7 @@ public class PromptRegistry {
             "    \"data_model_notes\": \"string\",\n" +
             "    \"testability_notes\": \"string\",\n" +
             "    \"dependency_risks\": \"string\",\n" +
-            "    \"code_quality_assessment\": \"string\"\n"+
+            "    \"code_quality_assessment\": \"string\"\n" +
             "  }\n" +
             "]\n" +
             "The output must contain only valid JSON with no explanation or commentary.\n";
@@ -184,7 +261,7 @@ public class PromptRegistry {
             "    \"data_model_notes\": \"string\",\n" +
             "    \"testability_notes\": \"string\",\n" +
             "    \"dependency_risks\": \"string\",\n" +
-            "    \"code_quality_assessment\": \"string\"\n"+
+            "    \"code_quality_assessment\": \"string\"\n" +
             "  }\n" +
             "]\n" +
             "\n" +
@@ -194,6 +271,57 @@ public class PromptRegistry {
             "Unify and summarize them into final domain-level evaluations using the required JSON format.\n" +
             "\n" +
             "Return only JSON.\n";
+
+    public static final String MEDIUM_HIGH_DOMAIN_ANALYSIS_SYSTEM_PROMPT =
+            "You are an experienced backend engineer analyzing medium-high priority domains.\n" +
+                    "\n" +
+                    "These domains contain non-trivial business logic but are not system-critical.\n" +
+                    "\n" +
+                    "Focus on:\n" +
+                    "- Business logic complexity\n" +
+                    "- Data access patterns\n" +
+                    "- Potential performance bottlenecks\n" +
+                    "- Maintainability concerns\n" +
+                    "\n" +
+                    "Avoid architectural over-analysis.\n" +
+                    "Avoid system-wide assumptions.\n" +
+                    "Your final output must strictly follow this JSON structure:\n" +
+                    "\n" +
+                    "[\n" +
+                    "  {\n" +
+                    "    \"domain\": \"string\",\n" +
+                    "    \"summary\": \"string\",\n" +
+                    "    \"architecture\": \"string\",\n" +
+                    "    \"key_flows\": \"string\",\n" +
+                    "    \"key_classes\": [\"string\", ...],\n" +
+                    "    \"risks\": [\"string\", ...],\n" +
+                    "    \"improvement\": [\"string\", ...]\n" +
+                    "    \"performance_profile\": \"string\",\n" +
+                    "    \"security_assessment\": \"string\",\n" +
+                    "    \"data_model_notes\": \"string\",\n" +
+                    "    \"testability_notes\": \"string\",\n" +
+                    "    \"dependency_risks\": \"string\",\n" +
+                    "    \"code_quality_assessment\": \"string\"\n" +
+                    "  }\n" +
+                    "]\n" +
+                    "\n" +
+                    "Return only valid JSON with no explanation or commentary.\n" +
+                    "\n" +
+                    "Output must be concise, technical, and JSON-only.";
+
+    public static final String MEDIUM_HIGH_DOMAIN_ANALYSIS_USER_PROMPT =
+            "Analyze the following medium-high priority domain.\n" +
+                    "\n" +
+                    "Provide:\n" +
+                    "- Main responsibilities\n" +
+                    "- Notable logic or data handling patterns\n" +
+                    "- Performance or complexity concerns\n" +
+                    "- Improvement opportunities\n" +
+                    "\n" +
+                    "Return ONLY valid JSON.\n" +
+                    "No markdown or extra commentary.\n" +
+                    "\n" +
+                    "Domain name and file paths:\n";
 
     public static final String MEDIUM_PRIORITY_DOMAIN_SYSTEM_MESSAGE_PROMPT = "You are a software domain summarization assistant.  \n" +
             "Your task is to merge partial analyses from controller, service, repository, entity, config, filter, and frontend roles into a single domain-level summary.\n" +
@@ -223,7 +351,7 @@ public class PromptRegistry {
             "    \"data_model_notes\": \"string\",\n" +
             "    \"testability_notes\": \"string\",\n" +
             "    \"dependency_risks\": \"string\",\n" +
-            "    \"code_quality_assessment\": \"string\"\n"+
+            "    \"code_quality_assessment\": \"string\"\n" +
             "  }\n" +
             "]\n" +
             "\n" +
