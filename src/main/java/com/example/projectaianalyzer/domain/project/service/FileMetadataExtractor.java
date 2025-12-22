@@ -2,7 +2,6 @@ package com.example.projectaianalyzer.domain.project.service;
 
 import com.example.projectaianalyzer.domain.project.model.FileInfo;
 import com.example.projectaianalyzer.domain.project.model.ProjectInfo;
-import com.example.projectaianalyzer.infra.util.FileContentLoader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -22,16 +21,12 @@ public class FileMetadataExtractor {
         String extension = projectFileClassifier.classifyExtension(path);
         String role = projectFileClassifier.classifyRole(path);
 
-        String rawCode = FileContentLoader.loadFileContent(path);
-        String content = getContent(rawCode);
-
         return FileInfo.builder()
                 .fileName(path.getFileName().toString())
                 .relativePath(rootPath.relativize(path).toString())
                 .absolutePath(path.toAbsolutePath().toString())
                 .extension(extension)
                 .role(role)
-                .content(content)
                 .projectInfo(projectInfo)
                 .build();
     }

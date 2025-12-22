@@ -63,6 +63,7 @@ public class ProjectFileScannerImpl implements ProjectFileScanner {
         return null;
     }
 
+    // 프레임워크 감지
     private List<ProjectInfo> detectProjectTypeBySubDir(String projectPath) {
         log.debug("::::2. 프로젝트 프레임워크 감지 시작::::");
         List<ProjectInfo> projectInfos = new ArrayList<>();
