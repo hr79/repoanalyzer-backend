@@ -48,8 +48,8 @@ class AnalysisManagerImplTest {
 
         // FileInfo constructor: (fileName, relativePath, absolutePath, extension, role, projectInfo, content, summary)
         // Make relativePath match the entries in structureList ("A.java", "B.java") so AnalysisManager can find them.
-        FileInfo fileInfo1 = new FileInfo("A.java", "A.java", "/A.java", "java", "roleA", null, "c", null);
-        FileInfo fileInfo2 = new FileInfo("B.java", "B.java", "/B.java", "java", "roleB", null, "c", null);
+        FileInfo fileInfo1 = new FileInfo("A.java", "A.java", "/A.java", "java", "roleA", null);
+        FileInfo fileInfo2 = new FileInfo("B.java", "B.java", "/B.java", "java", "roleB", null);
         List<FileInfo> fileInfos = List.of(fileInfo1, fileInfo2);
 
 

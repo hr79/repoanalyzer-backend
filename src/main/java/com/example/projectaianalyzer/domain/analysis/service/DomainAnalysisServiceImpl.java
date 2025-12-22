@@ -4,6 +4,7 @@ import com.example.projectaianalyzer.domain.ai.service.GroqClient;
 import com.example.projectaianalyzer.domain.project.model.FileInfo;
 import com.example.projectaianalyzer.domain.ai.model.GroqAiModel;
 import com.example.projectaianalyzer.common.PromptRegistry;
+import com.example.projectaianalyzer.infra.util.CodeProvider;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class DomainAnalysisServiceImpl implements DomainAnalysisService {
     private final GroqClient groqClient;
+    private final CodeProvider codeProvider;
+
     /**
      * 도메인(예: controller/service 등)에 대한 분석을 수행합니다.
      * 반환값은 각 배치별 Groq 응답 문자열의 리스트입니다.
@@ -26,11 +29,15 @@ public class DomainAnalysisServiceImpl implements DomainAnalysisService {
     public String analyzeByRole(String priority, FileRole role, List<FileInfo> files) {
         log.info(":::: analyzeRole ::::");
         List<Map<String, String>> filesAsJson = new ArrayList<>();
-        files.forEach(f -> filesAsJson.add(
-                Map.of("fileName", f.getFileName(),
-                        "path", f.getRelativePath(),
-                        "role", role.getName(),
-                        "code", f.getContent())));
+
+        files.forEach(f -> {
+            String content = codeProvider.loadContent(f.getAbsolutePath());
+            filesAsJson.add(
+                    Map.of("fileName", f.getFileName(),
+                            "path", f.getRelativePath(),
+                            "role", role.getName(),
+                            "code", content));
+        });
 
         ObjectMapper objectMapper = new ObjectMapper();
         String jsonString;
