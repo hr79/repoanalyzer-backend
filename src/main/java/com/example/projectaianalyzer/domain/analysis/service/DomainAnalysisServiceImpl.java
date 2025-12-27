@@ -27,7 +27,9 @@ public class DomainAnalysisServiceImpl implements DomainAnalysisService {
      * 반환값은 각 배치별 Groq 응답 문자열의 리스트입니다.
      */
     public String analyzeByRole(String priority, FileRole role, List<FileInfo> files) {
-        log.info(":::: analyzeRole ::::");
+        log.info(":::: analyzeByRole 시작 - priority: {}, role: {}, 파일 수: {}, 스레드: {}",
+                priority, role.getName(), files.size(), Thread.currentThread().getName());
+
         List<Map<String, String>> filesAsJson = new ArrayList<>();
 
         files.forEach(f -> {
@@ -54,15 +56,22 @@ public class DomainAnalysisServiceImpl implements DomainAnalysisService {
 
         String userMessage = PromptRegistry.DOMAIN_ROLE_ANALYSIS_USER_MESSAGE_PROMPT + jsonString;
 
-        return groqClient.analyzeProject(
+        log.info(":::: analyzeByRole - Groq API 호출 직전, role: {}", role.getName());
+
+        String result = groqClient.analyzeProject(
                 filesAsJson,
                 Map.of("role", "system", "content", PromptRegistry.DOMAIN_ROLE_ANALYSIS_SYSTEM_PROMPT),
                 Map.of("role", "user", "content", userMessage),
                 defaultModel,
                 fallbackModel);
+
+        log.info(":::: analyzeByRole 완료 - priority: {}, role: {}, 스레드: {}",
+                priority, role.getName(), Thread.currentThread().getName());
+
+        return result;
     }
 
-    public String analyzeDomainByPriority(String priority, String domain, List<String> resultsByRoles) {
+    public String analyzeDomain(String priority, String domain, List<String> resultsByRoles) {
         log.info(":::: analyzeDomainsByPriority ::::");
         if (resultsByRoles == null || resultsByRoles.isEmpty()) {
             throw new IllegalArgumentException("files is empty");

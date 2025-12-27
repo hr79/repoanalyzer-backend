@@ -13,7 +13,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
@@ -38,19 +37,20 @@ public class GroqClient {
     private long fallbackThresholdMs;
 
     private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-//    private final Random random = new Random();
 
     public GroqClient(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 
     public String analyzeProject(Object jsonObject, Map<String, Object> systemMessage, Map<String, Object> userMessage, String model, @Nullable String fallbackModel) {
-        log.info("::::GroqClient.analyzeProject 호출됨");
+        log.info("::::GroqClient.analyzeProject 호출됨, 모델: {}", model);
 
         HttpEntity<Map<String, Object>> entity = buildHttpRequestBody(model, systemMessage, userMessage);
 
         // 재시도 루프: 429 또는 서버 오류(5xx)에 대해 지수 백오프 + 지터로 재시도
-        return callWithFallback(fallbackModel, entity, model);
+        String result = callWithFallback(fallbackModel, entity, model);
+        log.info("::::GroqClient.analyzeProject 완료");
+        return result;
     }
 
     private String callWithFallback(String fallbackModel, HttpEntity<Map<String, Object>> entity, String model) {
@@ -81,11 +81,15 @@ public class GroqClient {
         boolean enableFallback = true;
         String currentModel = model;
 
+        log.info(":::: sendRequest 시작, 초기 모델: {}", currentModel);
+
         while (attempt <= maxRetries) {
             if (attempt > 0) {
                 log.info("재시도 {}회째", attempt);
             }
             try {
+                log.info(":::: Groq API 호출 시작 (시도: {}), 모델: {}, 스레드: {}", attempt, currentModel, Thread.currentThread().getName());
+
                 ResponseEntity<Map> response = restTemplate.exchange(
                         GROQ_API_URL,
                         HttpMethod.POST,
@@ -93,15 +97,15 @@ public class GroqClient {
                         Map.class
                 );
 
-                Map<String, Object> responseBody = response.getBody();
-                if (responseBody != null) {
-                    List<Map<String, Object>> choices = (List<Map<String, Object>>) responseBody.get("choices");
-                    if (choices != null && !choices.isEmpty()) {
-                        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+                log.info(":::: Groq API 응답 수신 (시도: {}), 상태: {}", attempt, response.getStatusCode());
 
-                        return (String) message.get("content");
-                    }
-                }
+                // ✅ 응답 파싱을 별도 메서드로 분리
+                // 파싱 실패 시 예외 발생 → 무한 루프 방지
+                String content = parseResponse(response);
+
+                log.info(":::: Groq API 응답 파싱 완료, 모델: {}", currentModel);
+                return content;
+
             } catch (HttpClientErrorException e) {
                 // 4xx 에러 처리
                 if (e.getStatusCode().value() == 429) {
@@ -138,7 +142,12 @@ public class GroqClient {
                     }
 
                     log.info("429 응답 - 재시도 대기(ms): {} (시도: {}), 현재 모델: {}", waitMs, attempt, currentModel);
-                    sleepMillis(waitMs);
+                    waitUsingRetryScheduler(waitMs);
+                    continue;  // ✅ 명시적 continue
+                } else {
+                    // ✅ 다른 4xx 에러는 재시도하지 않음
+                    log.error("4xx 에러 ({}): {}", e.getStatusCode(), e.getMessage());
+                    throw new RuntimeException("API 4xx 에러: " + e.getStatusCode(), e);
                 }
             } catch (HttpServerErrorException e) {
                 attempt++;
@@ -148,14 +157,57 @@ public class GroqClient {
                 waitMs = computeBackoffWithJitter(attempt);
                 log.warn("서버 오류({}) - 재시도 대기(ms): {} (시도: {}), 현재 모델: {}", e.getRawStatusCode(), waitMs, attempt, currentModel);
                 log.warn("error: {}, message: {}", e.getStatusCode(), e.getMessage());
-                sleepMillis(waitMs);
+                waitUsingRetryScheduler(waitMs);
+                continue;  // ✅ 명시적 continue
+            } catch (RuntimeException e) {
+                // ✅ 응답 파싱 실패 등 런타임 에러
+                log.error("런타임 오류: {}", e.getMessage());
+                throw e;
             } catch (Exception e) {
-                log.error("현재 모델: {}, Groq API 호출 중 오류 발생: {}", currentModel, e.getMessage());
+                log.error("현재 모델: {}, Groq API 호출 중 예기치 않은 오류 발생: {}", currentModel, e.getMessage(), e);
                 throw new RuntimeException("Groq API 호출 중 오류 발생", e);
             }
         }
 
+        log.warn(":::: sendRequest 완료 - 최대 재시도 초과");
         return "분석 결과를 가져오지 못했습니다.";
+    }
+
+    // ✅ 추가: 응답 파싱 메서드 (모든 실패 케이스 처리)
+    private String parseResponse(ResponseEntity<Map> response) {
+        Map<String, Object> responseBody = response.getBody();
+
+        if (responseBody == null) {
+            log.warn("응답 본문이 null입니다");
+            throw new RuntimeException("응답 본문이 null입니다");
+        }
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> choices = (List<Map<String, Object>>) responseBody.get("choices");
+
+        if (choices == null || choices.isEmpty()) {
+            log.warn("응답에 choices가 없거나 비어있습니다. 응답 키: {}", responseBody.keySet());
+            throw new RuntimeException("응답에 choices가 없습니다");
+        }
+
+        Map<String, Object> choice = choices.get(0);
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> message = (Map<String, Object>) choice.get("message");
+
+        if (message == null) {
+            log.warn("message가 null입니다. choice 키: {}", choice.keySet());
+            throw new RuntimeException("message가 null입니다");
+        }
+
+        String content = (String) message.get("content");
+
+        if (content == null || content.isBlank()) {
+            log.warn("content가 null이거나 비어있습니다. message 키: {}", message.keySet());
+            throw new RuntimeException("content가 없습니다");
+        }
+
+        return content;
     }
 
     private long computeBackoffWithJitter(int attempt) {
@@ -169,13 +221,14 @@ public class GroqClient {
         return Math.min(expBackoff + jitter, maxWait);
     }
 
-    private void sleepMillis(long ms) {
+    private void waitUsingRetryScheduler(long ms) {
+        // ✅ 수정: Thread.sleep() 사용 - groqExecutor 스레드를 블로킹해도 괜찮음
+        // (retryScheduler의 싱글 스레드에 의존하지 않음)
         try {
             Thread.sleep(ms);
-        } catch (InterruptedException ie) {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("재시도 대기 중 인터럽트 발생", ie);
+            log.warn("재시도 대기 중 인터럽트 발생: {}", e.getMessage());
         }
     }
 }
-

@@ -55,7 +55,7 @@ class AnalysisManagerImplTest {
 
         when(domainAnalysisService.analyzeByRole(anyString(), any(), anyList()))
                 .thenReturn("{result}");
-        when(domainAnalysisService.analyzeDomainByPriority(anyString(), anyString(), anyList()))
+        when(domainAnalysisService.analyzeDomain(anyString(), anyString(), anyList()))
                 .thenReturn("{priority}");
         when(domainAnalysisService.analyzeFinalByAllResults(anyList()))
                 .thenReturn("{final}");
