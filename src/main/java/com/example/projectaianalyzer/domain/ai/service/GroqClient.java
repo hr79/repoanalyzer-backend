@@ -142,7 +142,7 @@ public class GroqClient {
                     }
 
                     log.info("429 응답 - 재시도 대기(ms): {} (시도: {}), 현재 모델: {}", waitMs, attempt, currentModel);
-                    waitUsingRetryScheduler(waitMs);
+                    waitWithThreadSleep(waitMs);
                     continue;  // ✅ 명시적 continue
                 } else {
                     // ✅ 다른 4xx 에러는 재시도하지 않음
@@ -157,7 +157,7 @@ public class GroqClient {
                 waitMs = computeBackoffWithJitter(attempt);
                 log.warn("서버 오류({}) - 재시도 대기(ms): {} (시도: {}), 현재 모델: {}", e.getRawStatusCode(), waitMs, attempt, currentModel);
                 log.warn("error: {}, message: {}", e.getStatusCode(), e.getMessage());
-                waitUsingRetryScheduler(waitMs);
+                waitWithThreadSleep(waitMs);
                 continue;  // ✅ 명시적 continue
             } catch (RuntimeException e) {
                 // ✅ 응답 파싱 실패 등 런타임 에러
@@ -221,7 +221,7 @@ public class GroqClient {
         return Math.min(expBackoff + jitter, maxWait);
     }
 
-    private void waitUsingRetryScheduler(long ms) {
+    private void waitWithThreadSleep(long ms) {
         // ✅ 수정: Thread.sleep() 사용 - groqExecutor 스레드를 블로킹해도 괜찮음
         // (retryScheduler의 싱글 스레드에 의존하지 않음)
         try {
