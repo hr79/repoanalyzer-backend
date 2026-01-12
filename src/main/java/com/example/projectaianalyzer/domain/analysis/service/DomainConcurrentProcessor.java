@@ -2,45 +2,62 @@ package com.example.projectaianalyzer.domain.analysis.service;
 
 import com.example.projectaianalyzer.domain.analysis.dto.FileStructureAnalysisDto;
 import com.example.projectaianalyzer.domain.project.model.FileInfo;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class DomainConcurrentProcessor {
-    private final ExecutorService executor;
+    private final ExecutorService analysisExecutor;
     private final DomainTaskRunner domainTaskRunner;
+
+    public DomainConcurrentProcessor(@Qualifier("analysisExecutor") ExecutorService analysisExecutor, DomainTaskRunner domainTaskRunner) {
+        this.analysisExecutor = analysisExecutor;
+        this.domainTaskRunner = domainTaskRunner;
+    }
 
     public List<String> analyzeDomains(List<FileStructureAnalysisDto> fileStructureDtoList, Map<String, FileInfo> fileInfoMap) {
         long start = System.nanoTime();
         try {
             List<CompletableFuture<String>> futures = fileStructureDtoList.stream()
-                    .map(dto -> CompletableFuture.supplyAsync(
-                            () -> domainTaskRunner.runAnalyzeDomain(dto, fileInfoMap),
-                            executor
-                    ).handle((res, ex) -> {
-                        if (ex != null) {
-                            log.error("Domain analysis failed: {}", dto.getDomain(), ex);
-                            return null;
-                        }
-                        return res;
-                    })) // 예외가 존재하면 null, 존재하지않으면 res 반환
-                    .toList();
+                    .map(dto -> {
+                        log.info(":::: {} 도메인 분석 시작", dto.getDomain());
+                        return CompletableFuture.supplyAsync(
+                                        () -> domainTaskRunner.runAnalyzeDomain(dto, fileInfoMap),
+                                        analysisExecutor
+                                )
+                                .exceptionally(ex -> {
+                                    log.error("Domain analysis failed: {}", dto.getDomain(), ex);
+                                    return null;
+                                })
+                                .whenComplete((result, ex) -> {
+                                    if (ex == null) {
+                                        log.info(":::: {} 도메인 분석 완료", dto.getDomain());
+                                    } else {
+                                        log.error(":::: {} 도메인 분석 실패: {}", dto.getDomain(), ex.getMessage());
+                                    }
+                                });
+                    }).toList();
 
-            // 모든 작업들이 완료할때까지 대기
+            log.info(":::: 총 {} 개의 도메인 분석 완료 대기 중", futures.size());
+            log.info("DomainConcurrentProcessor: current thread = {}", Thread.currentThread().getName());
+
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-            return futures.stream()
-                    .map(CompletableFuture::join)
-                    .filter(result -> result != null)
+            List<String> results = futures.stream()
+                    .map(f -> f.getNow(null))
+                    .filter(Objects::nonNull)
+                    .filter(s -> !s.isBlank())
                     .toList();
+            return results;
+
         } finally {
             long end = System.nanoTime();
             long elapsedTime = end - start;
