@@ -23,16 +23,14 @@ public class DomainTaskRunner {
         this.groqExecutor = groqExecutor;
     }
 
-    public CompletableFuture<String> runAnalyzeDomain(FileStructureAnalysisDto fileStructureAnalysisDto, Map<String, FileInfo> fileInfoMap) {
-//        long start = System.nanoTime();
-//        try {
+    public String runAnalyzeDomain(FileStructureAnalysisDto fileStructureAnalysisDto, Map<String, FileInfo> fileInfoMap) {
         String domain = fileStructureAnalysisDto.getDomain();
         String priority = fileStructureAnalysisDto.getPriority();
         List<String> filesByPriority = fileStructureAnalysisDto.getFiles();
 
         if (filesByPriority == null || filesByPriority.isEmpty()) {
             log.warn(priority + " 중요도의 " + domain + " 도메인 파일이 없습니다.");
-            return CompletableFuture.completedFuture("");
+            return null;
         }
 
         Map<FileRole, List<FileInfo>> filesByRole = new HashMap<>();
@@ -42,7 +40,7 @@ public class DomainTaskRunner {
                 filesByRole = mapDomainFilesByRole(filesByPriority, fileInfoMap);
             }
             case "low" -> {
-                return CompletableFuture.completedFuture("");
+                return null;
             }
         }
         if (filesByRole.isEmpty()) {
@@ -60,51 +58,39 @@ public class DomainTaskRunner {
             log.info(":::: {} 중요도/ {} 도메인의 {} 레이어 분석을 시작합니다.", priority, domain, role);
             CompletableFuture<String> stringCompletableFuture = CompletableFuture.supplyAsync(
                             () -> domainAnalysisService.analyzeByRole(priority, role, files), groqExecutor)
-                    .thenApply(r -> ResultCleaner.getCleanResult(r));
+                    .thenApply(r -> ResultCleaner.getCleanResult(r))
+                    .exceptionally(ex -> {
+                        log.error(":::: {} 도메인의 {} 레이어 분석 실패", domain, role, ex);
+                        return null;
+                    });
             futureList.add(stringCompletableFuture);
-//                    } else {
-//                        log.info(":::: {} 중요도/ {} 도메인의 {} 레이어 파일이 없습니다.", priority, domain, role);
-//                    }
         });
 
         if (futureList.isEmpty()) {
             log.warn("{} 중요도의 {} 도메인을 최종 분석할 리스트가 없습니다", priority, domain);
-            return CompletableFuture.completedFuture("");
+            return null;
         }
 
-        // 수정: CompletableFuture 체인을 사용하여 analysisExecutor 스레드 블로킹 제거
-        // allOf() → thenCompose()를 사용하여 명시적으로 다음 단계를 체인
-        return CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]))
-                .thenCompose(v -> {
-                    // 중요: join()을 thenCompose 콜백 내에서만 호출
-                    // (analysisExecutor 스레드가 아닌 다른 스레드에서 실행됨)
-                    List<String> results = futureList.stream()
-                            .map(CompletableFuture::join)
-                            .filter(Objects::nonNull)
-                            .toList();
+        CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0])).join();
 
-                    log.info(":::: {} 도메인의 {} 레이어 분석 완료. 이제 도메인 통합 분석 시작", priority, domain);
+        List<String> roleAnalysisResults = futureList.stream()
+                .map(f -> f.getNow(null))
+                .filter(Objects::nonNull)
+                .toList();
 
-                    // 다음 단계: 도메인 분석 (새로운 CompletableFuture 반환)
-                    return CompletableFuture.completedFuture(results);
-                })
-                .thenApply(results -> {
-                    log.info(":::: {} 도메인의 도메인 통합 분석 중...", domain);
-                    return domainAnalysisService.analyzeDomain(priority, domain, results);
-                })
-                .thenApply(finalResult -> {
-                    finalResult = ResultCleaner.getCleanResult(finalResult);
-                    log.info("domain: {}, priority: {}, result: {}", domain, priority, finalResult);
-                    return finalResult;
-                });
-//        } finally {
-//            long end = System.nanoTime();
-//            long elapsedTime = end - start;
-//
-//            log.info("runAnalyzeDomains 실행시간: {} ns", elapsedTime);
-//            log.info("runAnalyzeDomains 실행시간: {} ms", elapsedTime / 1_000_000);
-//            log.info("runAnalyzeDomains 실행시간: {} s", elapsedTime / 1_000_000_000);
-//        }
+        log.info(":::: {} 도메인의 {} 레이어 분석 완료. 이제 도메인 통합 분석 시작", priority, domain);
+
+        if (roleAnalysisResults.isEmpty()) {
+            log.warn("{} 중요도의 {} 도메인 분석 결과가 모두 실패했습니다", priority, domain);
+            return null;
+        }
+
+        log.info(":::: {} 도메인의 도메인 통합 분석 중...", domain);
+        String finalResult = domainAnalysisService.analyzeDomain(priority, domain, roleAnalysisResults);
+        finalResult = ResultCleaner.getCleanResult(finalResult);
+        log.info("domain: {}, priority: {}, result: {}", domain, priority, finalResult);
+
+        return finalResult;
     }
 
     private Map<FileRole, List<FileInfo>> mapDomainFilesByRole(

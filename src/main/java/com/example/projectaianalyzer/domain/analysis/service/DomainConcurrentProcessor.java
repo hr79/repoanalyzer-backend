@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
@@ -26,34 +27,37 @@ public class DomainConcurrentProcessor {
         long start = System.nanoTime();
         try {
             List<CompletableFuture<String>> futures = fileStructureDtoList.stream()
-                .map(dto -> {
-                    log.info(":::: {} 도메인 분석 시작", dto.getDomain());
-                    return CompletableFuture.supplyAsync(
-                        () -> domainTaskRunner.runAnalyzeDomain(dto, fileInfoMap),
-                        analysisExecutor
-                    )
-                    .thenCompose(f -> f)  // CompletableFuture<String>을 CompletableFuture<String>로 변환
-                    .exceptionally(ex -> {
-                        log.error("Domain analysis failed: {}", dto.getDomain(), ex);
-                        return "";
-                    })
-                    .whenComplete((result, ex) -> {
-                        if (ex == null) {
-                            log.info(":::: {} 도메인 분석 완료", dto.getDomain());
-                        } else {
-                            log.error(":::: {} 도메인 분석 실패: {}", dto.getDomain(), ex.getMessage());
-                        }
-                    });
-                }).toList();
+                    .map(dto -> {
+                        log.info(":::: {} 도메인 분석 시작", dto.getDomain());
+                        return CompletableFuture.supplyAsync(
+                                        () -> domainTaskRunner.runAnalyzeDomain(dto, fileInfoMap),
+                                        analysisExecutor
+                                )
+                                .exceptionally(ex -> {
+                                    log.error("Domain analysis failed: {}", dto.getDomain(), ex);
+                                    return null;
+                                })
+                                .whenComplete((result, ex) -> {
+                                    if (ex == null) {
+                                        log.info(":::: {} 도메인 분석 완료", dto.getDomain());
+                                    } else {
+                                        log.error(":::: {} 도메인 분석 실패: {}", dto.getDomain(), ex.getMessage());
+                                    }
+                                });
+                    }).toList();
 
-            // 수정: join() 호출 시 모든 CompletableFuture가 이미 완료된 상태
-            // thenCompose()를 통해 모든 futures가 순차적으로 완료되도록 보장
             log.info(":::: 총 {} 개의 도메인 분석 완료 대기 중", futures.size());
+            log.info("DomainConcurrentProcessor: current thread = {}", Thread.currentThread().getName());
 
-            return futures.stream()
-                .map(CompletableFuture::join)
-                .filter(s -> s != null && !s.isBlank())
-                .toList();
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+            List<String> results = futures.stream()
+                    .map(f -> f.getNow(null))
+                    .filter(Objects::nonNull)
+                    .filter(s -> !s.isBlank())
+                    .toList();
+            return results;
+
         } finally {
             long end = System.nanoTime();
             long elapsedTime = end - start;
